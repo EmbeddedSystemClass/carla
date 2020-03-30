@@ -50,8 +50,8 @@ pipeline
                         {
                             steps
                             {
-                                sh 'make LibCarla'
-                                sh 'make PythonAPI'
+                                sh 'make LibCarla.client.rss'
+                                sh 'make PythonAPI.rss'
                                 sh 'make CarlaUE4Editor'
                                 sh 'make examples'
                             }
@@ -202,123 +202,6 @@ pipeline
                                     jenkinsLib = load("/home/jenkins/jenkins.groovy")
                                     
                                     jenkinsLib.DeleteUbuntuBuildNode(JOB_ID)
-                                }
-                            }
-                        }
-                    }
-                }
-                stage('windows')
-                {
-                    agent { label "windows && build && ${JOB_ID}" }
-                    environment
-                    {
-                        UE4_ROOT = 'C:\\Program Files\\Epic Games\\UE_4.24'
-                    }
-                    stages
-                    {
-                        stage('windows setup')
-                        {
-                            steps
-                            {
-                                bat """
-                                    call ../setEnv64.bat
-                                    make setup
-                                """
-                            }
-                        }
-                        stage('windows build')
-                        {
-                            steps
-                            {
-                                bat """
-                                    call ../setEnv64.bat
-                                    make LibCarla
-                                """
-                                bat """
-                                    call ../setEnv64.bat
-                                    make PythonAPI
-                                """
-                                bat """
-                                    call ../setEnv64.bat
-                                    make CarlaUE4Editor
-                                """
-                                // make examples
-                            }
-                            post
-                            {
-                                always
-                                {
-                                    archiveArtifacts 'PythonAPI/carla/dist/*.egg'
-                                    stash includes: 'PythonAPI/carla/dist/*.egg', name: 'windows_eggs'
-                                }
-                            }
-                        }
-                        // stage('windows unit tests')
-                        // {
-                        //     steps { bat 'rem Not Implemented'}
-                        // }
-                        stage('windows retrieve content')
-                        {
-                            steps
-                            {
-                                bat """
-                                    call ../setEnv64.bat
-                                    call Update.bat
-                                """
-                            }
-                        }
-                        stage('windows package')
-                        {
-                            steps
-                            {
-                                bat """
-                                    call ../setEnv64.bat
-                                    make package
-                                """
-                                bat """
-                                    call ../setEnv64.bat
-                                    make package ARGS="--packages=AdditionalMaps --clean"
-                                """
-                                // make examples ARGS="localhost 3654"
-                            }
-                            post {
-                                always {
-                                    archiveArtifacts 'Build/UE4Carla/*.zip'
-                                    // stash includes: 'Build/UE4Carla/CARLA*.zip', name: 'windows_package'
-                                    // stash includes: 'Examples/', name: 'windows_examples'
-                                }
-                            }
-                        }
-                        // stage('windows smoke test')
-                        // {
-                        //     steps { bat 'rem Not Implemented'}
-                        // }
-                        stage('windows deploy')
-                        {
-                            when { anyOf { branch "master"; buildingTag() } }
-                            steps {
-                                bat """
-                                    call ../setEnv64.bat
-                                    git checkout .
-                                    make deploy ARGS="--replace-latest"
-                                """
-                            }
-                        }
-                    }
-                    post 
-                    {
-                        always 
-                        { 
-                            deleteDir() 
-
-                            node('master')
-                            {
-                                script
-                                {
-                                    JOB_ID = "${env.BUILD_TAG}"
-                                    jenkinsLib = load("/home/jenkins/jenkins.groovy")
-                                    
-                                    jenkinsLib.DeleteWindowsBuildNode(JOB_ID)
                                 }
                             }
                         }
